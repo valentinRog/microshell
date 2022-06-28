@@ -36,16 +36,18 @@ int cmds_len( char **cmds ) {
     return N;
 }
 
-void fatal() {
-    d_putstr( STDERR_FILENO, "error: fatal\n" );
-    exit( EXIT_FAILURE );
-}
-
 void close_pipe( int fds[] ) {
     if ( fds ) {
         close( fds[0] );
         close( fds[1] );
     }
+}
+
+void fatal( int *i_pipe, int *o_pipe ) {
+    close_pipe( i_pipe );
+    close_pipe( o_pipe );
+    d_putstr( STDERR_FILENO, "error: fatal\n" );
+    exit( EXIT_FAILURE );
 }
 
 void bi_cd( char **cmds ) {
@@ -64,14 +66,14 @@ void bi_cd( char **cmds ) {
 void executor( char *cmd, char **cmds, int *i_pipe, int *o_pipe, char **ep ) {
     if ( !strcmp( cmd, "cd" ) ) { return bi_cd( cmds ); }
     int pid = fork();
-    if ( pid < 0 ) { fatal(); }
+    if ( pid < 0 ) { fatal( i_pipe, o_pipe ); }
     if ( !pid ) {
         if ( i_pipe && dup2( i_pipe[PIPE_READ], STDIN_FILENO ) < 0 ) {
-            fatal();
+            fatal( i_pipe, o_pipe );
         }
         close_pipe( i_pipe );
         if ( o_pipe && dup2( o_pipe[PIPE_WRITE], STDOUT_FILENO ) < 0 ) {
-            fatal();
+            fatal( i_pipe, o_pipe );
         }
         close_pipe( o_pipe );
         execve( cmd, cmds, ep );
@@ -81,7 +83,12 @@ void executor( char *cmd, char **cmds, int *i_pipe, int *o_pipe, char **ep ) {
         exit( EXIT_FAILURE );
     }
     close_pipe( i_pipe );
-    waitpid( pid, NULL, 0 );
+    int exit_code;
+    waitpid( pid, &exit_code, 0 );
+    if ( exit_code ) {
+        close_pipe( o_pipe );
+        exit( EXIT_FAILURE );
+    }
 }
 
 int main( int ac, char **av, char **ep ) {
