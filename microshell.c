@@ -3,7 +3,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define N 100
+#define N 1000
 #define PIPE_READ 0
 #define PIPE_WRITE 1
 
@@ -50,21 +50,24 @@ void fatal( int *i_pipe, int *o_pipe ) {
     exit( EXIT_FAILURE );
 }
 
-void bi_cd( char **cmds ) {
+void bi_cd( char **cmds, int *i_pipe, int *o_pipe ) {
+    close_pipe( i_pipe );
     if ( cmds_len( cmds ) != 2 ) {
         d_putstr( STDERR_FILENO, "error: cd: bad arguments\n" );
+        close_pipe( o_pipe );
         exit( EXIT_FAILURE );
     }
     if ( chdir( cmds[1] ) ) {
         d_putstr( STDERR_FILENO, "error: cd: cannot change directory to " );
         d_putstr( STDERR_FILENO, cmds[1] );
         d_putstr( STDERR_FILENO, "\n" );
+        close_pipe( o_pipe );
         exit( EXIT_FAILURE );
     }
 }
 
 void executor( char *cmd, char **cmds, int *i_pipe, int *o_pipe, char **ep ) {
-    if ( !strcmp( cmd, "cd" ) ) { return bi_cd( cmds ); }
+    if ( !strcmp( cmd, "cd" ) ) { return bi_cd( cmds, i_pipe, o_pipe ); }
     int pid = fork();
     if ( pid < 0 ) { fatal( i_pipe, o_pipe ); }
     if ( !pid ) {
