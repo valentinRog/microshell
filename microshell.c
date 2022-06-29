@@ -102,14 +102,14 @@ int main( int ac, char **av, char **ep ) {
         if ( !( strcmp( av[i], ";" ) ) ) {
             executor( cmd, cmds, i_pipe, NULL, ep );
             set_cmds( cmds );
-            cmd    = av[i + 1];
+            cmd    = i + 1 < ac ? av[i + 1] : NULL;
             i_pipe = NULL;
         } else if ( !( strcmp( av[i], "|" ) ) ) {
             int o_pipe[2];
-            pipe( o_pipe );
+            if ( pipe( o_pipe ) < 0 ) { fatal( i_pipe, NULL ); }
             executor( cmd, cmds, i_pipe, o_pipe, ep );
             set_cmds( cmds );
-            cmd    = av[i + 1];
+            cmd    = i + 1 < ac ? av[i + 1] : NULL;
             fds[0] = o_pipe[0];
             fds[1] = o_pipe[1];
             i_pipe = fds;
