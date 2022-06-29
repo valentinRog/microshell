@@ -29,13 +29,6 @@ void add_cmd( char *cmds[], char *cmd ) {
     }
 }
 
-int cmds_len( char **cmds ) {
-    for ( int i = 0; i < N; i++ ) {
-        if ( !cmds[i] ) { return i; }
-    }
-    return N;
-}
-
 void close_pipe( int fds[] ) {
     if ( fds ) {
         close( fds[0] );
@@ -50,24 +43,21 @@ void fatal( int *i_pipe, int *o_pipe ) {
     exit( EXIT_FAILURE );
 }
 
-void bi_cd( char **cmds, int *i_pipe, int *o_pipe ) {
-    close_pipe( i_pipe );
-    if ( cmds_len( cmds ) != 2 ) {
+void bi_cd( char **cmds ) {
+    if ( !cmds[1] || cmds[2] ) {
         d_putstr( STDERR_FILENO, "error: cd: bad arguments\n" );
-        close_pipe( o_pipe );
-        exit( EXIT_FAILURE );
-    }
-    if ( chdir( cmds[1] ) ) {
+    } else if ( chdir( cmds[1] ) ) {
         d_putstr( STDERR_FILENO, "error: cd: cannot change directory to " );
         d_putstr( STDERR_FILENO, cmds[1] );
         d_putstr( STDERR_FILENO, "\n" );
-        close_pipe( o_pipe );
-        exit( EXIT_FAILURE );
     }
 }
 
 void executor( char *cmd, char **cmds, int *i_pipe, int *o_pipe, char **ep ) {
-    if ( !strcmp( cmd, "cd" ) ) { return bi_cd( cmds, i_pipe, o_pipe ); }
+    if ( !strcmp( cmd, "cd" ) ) {
+        close_pipe( i_pipe );
+        return bi_cd( cmds );
+    }
     int pid = fork();
     if ( pid < 0 ) { fatal( i_pipe, o_pipe ); }
     if ( !pid ) {
@@ -98,7 +88,7 @@ int main( int ac, char **av, char **ep ) {
     if ( ac < 2 ) { return 0; }
     char *cmd = av[1];
     char *cmds[N];
-    int * i_pipe = NULL;
+    int  *i_pipe = NULL;
     int   fds[2];
     set_cmds( cmds );
     for ( int i = 1; i < ac; i++ ) {
