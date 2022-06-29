@@ -92,11 +92,11 @@ void executor( char *cmd, char **cmds, int *i_pipe, int *o_pipe, char **ep ) {
 }
 
 int main( int ac, char **av, char **ep ) {
-    if ( ac < 2 ) { return 1; }
+    if ( ac < 2 ) { return 0; }
     char *cmd = av[1];
     char *cmds[N];
     int * i_pipe = NULL;
-    int   i_fds[2];
+    int   fds[2];
     set_cmds( cmds );
     for ( int i = 1; i < ac; i++ ) {
         if ( !( strcmp( av[i], ";" ) ) ) {
@@ -105,17 +105,17 @@ int main( int ac, char **av, char **ep ) {
             cmd    = av[i + 1];
             i_pipe = NULL;
         } else if ( !( strcmp( av[i], "|" ) ) ) {
-            int o_fds[2];
-            pipe( o_fds );
-            executor( cmd, cmds, i_pipe, o_fds, ep );
+            int o_pipe[2];
+            pipe( o_pipe );
+            executor( cmd, cmds, i_pipe, o_pipe, ep );
             set_cmds( cmds );
-            cmd      = av[i + 1];
-            i_fds[0] = o_fds[0];
-            i_fds[1] = o_fds[1];
-            i_pipe   = i_fds;
+            cmd    = av[i + 1];
+            fds[0] = o_pipe[0];
+            fds[1] = o_pipe[1];
+            i_pipe = fds;
         } else {
             add_cmd( cmds, av[i] );
         }
     }
-    executor( cmd, cmds, i_pipe, NULL, ep );
+    if ( cmd ) { executor( cmd, cmds, i_pipe, NULL, ep ); }
 }
