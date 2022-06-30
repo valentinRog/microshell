@@ -94,6 +94,7 @@ int main( int ac, char **av, char **ep ) {
     set_cmds( cmds );
     for ( int i = 1; i < ac; i++ ) {
         if ( !( strcmp( av[i], ";" ) ) ) {
+            while ( i + 1 < ac && !strcmp(av[i + 1], ";") ) { i++; }
             exit_code = executor( cmd, cmds, i_pipe, NULL, ep );
             set_cmds( cmds );
             cmd    = i + 1 < ac ? av[i + 1] : NULL;
