@@ -76,12 +76,7 @@ void executor( char *cmd, char **cmds, int *i_pipe, int *o_pipe, char **ep ) {
         exit( EXIT_FAILURE );
     }
     close_pipe( i_pipe );
-    int exit_code;
-    waitpid( pid, &exit_code, 0 );
-    if ( exit_code ) {
-        close_pipe( o_pipe );
-        exit( EXIT_FAILURE );
-    }
+    waitpid( pid, NULL, 0 );
 }
 
 int main( int ac, char **av, char **ep ) {
