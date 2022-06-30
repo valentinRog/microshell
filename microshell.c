@@ -43,17 +43,20 @@ void fatal( int *i_pipe, int *o_pipe ) {
     exit( EXIT_FAILURE );
 }
 
-void bi_cd( char **cmds ) {
+int bi_cd( char **cmds ) {
     if ( !cmds[1] || cmds[2] ) {
         d_putstr( STDERR_FILENO, "error: cd: bad arguments\n" );
+        return EXIT_FAILURE;
     } else if ( chdir( cmds[1] ) ) {
         d_putstr( STDERR_FILENO, "error: cd: cannot change directory to " );
         d_putstr( STDERR_FILENO, cmds[1] );
         d_putstr( STDERR_FILENO, "\n" );
+        return EXIT_FAILURE;
     }
+    return EXIT_SUCCESS;
 }
 
-void executor( char *cmd, char **cmds, int *i_pipe, int *o_pipe, char **ep ) {
+int executor( char *cmd, char **cmds, int *i_pipe, int *o_pipe, char **ep ) {
     if ( !strcmp( cmd, "cd" ) ) {
         close_pipe( i_pipe );
         return bi_cd( cmds );
@@ -76,7 +79,9 @@ void executor( char *cmd, char **cmds, int *i_pipe, int *o_pipe, char **ep ) {
         exit( EXIT_FAILURE );
     }
     close_pipe( i_pipe );
-    waitpid( pid, NULL, 0 );
+    int exit_code;
+    waitpid( pid, &exit_code, 0 );
+    return exit_code ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 int main( int ac, char **av, char **ep ) {
@@ -85,17 +90,18 @@ int main( int ac, char **av, char **ep ) {
     char *cmds[N];
     int  *i_pipe = NULL;
     int   fds[2];
+    int exit_code = 0;
     set_cmds( cmds );
     for ( int i = 1; i < ac; i++ ) {
         if ( !( strcmp( av[i], ";" ) ) ) {
-            executor( cmd, cmds, i_pipe, NULL, ep );
+            exit_code = executor( cmd, cmds, i_pipe, NULL, ep );
             set_cmds( cmds );
             cmd    = i + 1 < ac ? av[i + 1] : NULL;
             i_pipe = NULL;
         } else if ( !( strcmp( av[i], "|" ) ) ) {
             int o_pipe[2];
             if ( pipe( o_pipe ) < 0 ) { fatal( i_pipe, NULL ); }
-            executor( cmd, cmds, i_pipe, o_pipe, ep );
+            exit_code = executor( cmd, cmds, i_pipe, o_pipe, ep );
             set_cmds( cmds );
             cmd    = i + 1 < ac ? av[i + 1] : NULL;
             fds[0] = o_pipe[0];
@@ -105,5 +111,6 @@ int main( int ac, char **av, char **ep ) {
             add_cmd( cmds, av[i] );
         }
     }
-    if ( cmd ) { executor( cmd, cmds, i_pipe, NULL, ep ); }
+    if ( cmd ) { exit_code = executor( cmd, cmds, i_pipe, NULL, ep ); }
+    return exit_code;
 }
