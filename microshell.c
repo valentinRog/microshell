@@ -64,11 +64,11 @@ int executor( char *cmd, char **cmds, int *i_pipe, int *o_pipe, char **ep ) {
     int pid = fork();
     if ( pid < 0 ) { fatal( i_pipe, o_pipe ); }
     if ( !pid ) {
-        if ( i_pipe && dup2( i_pipe[PIPE_READ], STDIN_FILENO ) ) {
+        if ( i_pipe && dup2( i_pipe[PIPE_READ], STDIN_FILENO ) < 0 ) {
             fatal( i_pipe, o_pipe );
         }
         close_pipe( i_pipe );
-        if ( o_pipe && dup2( o_pipe[PIPE_WRITE], STDOUT_FILENO ) ) {
+        if ( o_pipe && dup2( o_pipe[PIPE_WRITE], STDOUT_FILENO ) < 0 ) {
             fatal( i_pipe, o_pipe );
         }
         close_pipe( o_pipe );
@@ -112,5 +112,6 @@ int main( int ac, char **av, char **ep ) {
         }
     }
     if ( cmd ) { exit_code = executor( cmd, cmds, i_pipe, NULL, ep ); }
+    if ( !strcmp( av[ac - 1], "|" ) ) { close_pipe( i_pipe ); }
     return exit_code;
 }
