@@ -88,13 +88,13 @@ int main( int ac, char **av, char **ep ) {
     if ( ac < 2 ) { return 0; }
     char *cmd = av[1];
     char *cmds[N];
-    int  *i_pipe = NULL;
+    int * i_pipe = NULL;
     int   fds[2];
-    int exit_code = 0;
+    int   exit_code = 0;
     set_cmds( cmds );
     for ( int i = 1; i < ac; i++ ) {
         if ( !( strcmp( av[i], ";" ) ) ) {
-            while ( i + 1 < ac && !strcmp(av[i + 1], ";") ) { i++; }
+            while ( i + 1 < ac && !strcmp( av[i + 1], ";" ) ) { i++; }
             exit_code = executor( cmd, cmds, i_pipe, NULL, ep );
             set_cmds( cmds );
             cmd    = i + 1 < ac ? av[i + 1] : NULL;
